@@ -1,4 +1,5 @@
 const net = require('net')
+const parseRequestLine = require('./request-line-parser')
 
 const server = net.createServer()
 
@@ -10,6 +11,12 @@ const clientOnConnection = c => {
     c.write(b.toString('utf8'))
     data += b
     process.stdout.write(data)
+
+    const rl = parseRequestLine(data)
+    if (rl !== null) {
+      data = rl[1]
+      console.log(rl[0])
+    }
   }
 
   const clientOnEnd = () => {
