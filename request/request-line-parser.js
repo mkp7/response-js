@@ -5,9 +5,9 @@ function RequestLine (method, target, version) {
 }
 
 function parseRequestLine (str) {
-  const RLPtrn = /^([a-zA-Z]{3,}) ([a-zA-Z0-9\/]{1,5000}) (HTTP\/\d\.\d)\r\n/
+  const ptrn = /^([^\s]{3,9}) ([^\s]{1,5000}) (HTTP\/\d\.\d)\r\n/
 
-  let match = RLPtrn.exec(str)
+  let match = ptrn.exec(str)
   if (match === null) {
     return null
   }
