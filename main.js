@@ -1,5 +1,6 @@
 const net = require('net')
 const parseRequest = require('./request/request-parser')
+const getResponse = require('./response/get-response')
 
 const server = net.createServer()
 
@@ -15,6 +16,8 @@ const clientOnConnection = c => {
     if (rl !== null) {
       data = rl[1]
       console.log(rl[0])
+      const res = getResponse(rl[0])
+      c.write(res.stringify())
     }
   }
 
@@ -41,8 +44,6 @@ server.on('error', e => {
   console.log(e)
 })
 
-// server.listen(4000, 'localhost', () => {
-//   console.log('server listening on localhost port 4000...')
-// })
-
-console.log(require('fs').readFileSync('./test', 'utf8'))
+server.listen(4000, 'localhost', () => {
+  console.log('server listening on localhost port 4000...')
+})
