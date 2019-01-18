@@ -15,14 +15,10 @@ const clientOnConnection = c => {
     const rl = parseRequest(data)
     if (rl !== null) {
       data = rl[1]
-      console.log(rl[0])
+      // console.log(rl[0])
       const res = getResponse(rl[0])
       c.write(res.stringify())
     }
-  }
-
-  const clientOnEnd = () => {
-    console.log('data stream recieve end')
   }
 
   const clientOnClose = () => {
@@ -30,7 +26,6 @@ const clientOnConnection = c => {
   }
 
   c.on('data', clientOnData)
-  c.on('end', clientOnEnd)
   c.on('close', clientOnClose)
 }
 

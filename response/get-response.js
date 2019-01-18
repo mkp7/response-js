@@ -1,5 +1,8 @@
-const PUBLIC = './public'
 const fs = require('fs')
+const url = require('url')
+const getContentType = require('./content-type')
+
+const PUBLIC_DIR = url.pathToFileURL(`${__dirname}/../public`).pathname
 
 function Response (statusLine, headers, body) {
   this.statusLine = statusLine
@@ -18,7 +21,29 @@ function Response (statusLine, headers, body) {
 
 function getUnderDevelopmentResponse () {
   const statusLine = 'HTTP/1.1 501 Not Implemented'
-  const body = fs.readFileSync(`${PUBLIC}/under-dev.html`, 'utf8')
+  const body = fs.readFileSync(`${PUBLIC_DIR}/under-dev.html`, 'utf8')
+  const headers = {
+    'Content-Type': 'text/html',
+    'Content-Length': Buffer.byteLength(body)
+  }
+
+  return new Response(statusLine, headers, body)
+}
+
+function getNotFoundResponse () {
+  const statusLine = 'HTTP/1.1 404 Not Found'
+  const body = fs.readFileSync(`${PUBLIC_DIR}/not-found.html`, 'utf8')
+  const headers = {
+    'Content-Type': 'text/html',
+    'Content-Length': Buffer.byteLength(body)
+  }
+
+  return new Response(statusLine, headers, body)
+}
+
+function getForbiddenResponse () {
+  const statusLine = 'HTTP/1.1 403 Forbidden'
+  const body = fs.readFileSync(`${PUBLIC_DIR}/forbidden.html`, 'utf8')
   const headers = {
     'Content-Type': 'text/html',
     'Content-Length': Buffer.byteLength(body)
@@ -32,19 +57,23 @@ function getResponse (request) {
     return getUnderDevelopmentResponse()
   }
 
-  const files = fs.readdirSync(PUBLIC)
-  if (!files.some(f => f === request.requestLine.target.slice(1))) {
-    return getUnderDevelopmentResponse()
+  if (!url.pathToFileURL(`${PUBLIC_DIR}${request.requestLine.target}`)
+    .pathname.startsWith(PUBLIC_DIR)) {
+    return getForbiddenResponse()
   }
 
-  const statusLine = 'HTTP/1.1 200 OK'
-  const body = fs.readFileSync(`${PUBLIC}${request.requestLine.target}`, 'utf8')
-  const headers = {
-    'Content-Type': 'text/html',
-    'Content-Length': Buffer.byteLength(body)
-  }
+  try {
+    const statusLine = 'HTTP/1.1 200 OK'
+    const body = fs.readFileSync(`${PUBLIC_DIR}${request.requestLine.target}`)
+    const headers = {
+      'Content-Type': getContentType(request.requestLine.target) || 'application/octet-stream',
+      'Content-Length': Buffer.byteLength(body)
+    }
 
-  return new Response(statusLine, headers, body)
+    return new Response(statusLine, headers, body)
+  } catch (err) {
+    return getNotFoundResponse()
+  }
 }
 
 module.exports = getResponse
