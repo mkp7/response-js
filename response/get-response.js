@@ -13,7 +13,9 @@ function Response (statusLine, headers, body) {
     for (let [k, v] of Object.entries(this.headers)) {
       res += `${k}:${v}\r\n`
     }
-    res += `\r\n${body}\r\n`
+    res = Buffer.from(res)
+    res = Buffer.concat([res, Buffer.from('\r\n'), this.body, Buffer.from('\r\n')], Buffer.byteLength(res) + Buffer.byteLength(this.body) + Buffer.byteLength('\r\n\r\n'))
+    // res += `\r\n${this.body}\r\n`
 
     return res
   }
@@ -21,7 +23,7 @@ function Response (statusLine, headers, body) {
 
 function getUnderDevelopmentResponse () {
   const statusLine = 'HTTP/1.1 501 Not Implemented'
-  const body = fs.readFileSync(`${PUBLIC_DIR}/under-dev.html`, 'utf8')
+  const body = fs.readFileSync(`${PUBLIC_DIR}/under-dev.html`)
   const headers = {
     'Content-Type': 'text/html',
     'Content-Length': Buffer.byteLength(body)
@@ -32,7 +34,7 @@ function getUnderDevelopmentResponse () {
 
 function getNotFoundResponse () {
   const statusLine = 'HTTP/1.1 404 Not Found'
-  const body = fs.readFileSync(`${PUBLIC_DIR}/not-found.html`, 'utf8')
+  const body = fs.readFileSync(`${PUBLIC_DIR}/not-found.html`)
   const headers = {
     'Content-Type': 'text/html',
     'Content-Length': Buffer.byteLength(body)
@@ -43,7 +45,7 @@ function getNotFoundResponse () {
 
 function getForbiddenResponse () {
   const statusLine = 'HTTP/1.1 403 Forbidden'
-  const body = fs.readFileSync(`${PUBLIC_DIR}/forbidden.html`, 'utf8')
+  const body = fs.readFileSync(`${PUBLIC_DIR}/forbidden.html`)
   const headers = {
     'Content-Type': 'text/html',
     'Content-Length': Buffer.byteLength(body)
