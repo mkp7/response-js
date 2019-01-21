@@ -13,11 +13,8 @@ function Response (statusLine, headers, body) {
     for (let [k, v] of Object.entries(this.headers)) {
       res += `${k}:${v}\r\n`
     }
-    res = Buffer.from(res)
-    res = Buffer.concat([res, Buffer.from('\r\n'), this.body, Buffer.from('\r\n')], Buffer.byteLength(res) + Buffer.byteLength(this.body) + Buffer.byteLength('\r\n\r\n'))
-    // res += `\r\n${this.body}\r\n`
 
-    return res
+    return Buffer.concat([Buffer.from(res + '\r\n'), this.body])
   }
 }
 
