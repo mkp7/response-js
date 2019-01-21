@@ -20,7 +20,7 @@ function ResponseJs () {
   this.put = (...rc) => this.PUT.push(rc)
   this.delete = (...rc) => this.DELETE.push(rc)
 
-  this.start = port => {
+  this.listen = port => {
     const server = net.createServer()
 
     server.on('connection', c => {
