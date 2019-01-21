@@ -1,8 +1,8 @@
 {
-  "name": "response-js-jisss",
+  "name": "response-js",
   "version": "0.0.9",
   "description": "A simple HTTP web server with HTTP/2 support, a project at GeekSkool",
-  "main": "main.js",
+  "main": "./main.js",
   "repository": "github.com:mkp7/response-js",
   "author": "Mehulkumar <m3hul.g4m3r@gmail.com>",
   "license": "MIT",
