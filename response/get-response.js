@@ -4,21 +4,24 @@ const getContentType = require('./content-type')
 
 const PUBLIC_DIR = url.pathToFileURL(`${__dirname}/../public`).pathname
 
-function Response (statusLine, headers, body) {
+function Response (request, conn, statusLine, headers, body) {
+  this.request = request
+  this.conn = conn
   this.statusLine = statusLine
   this.headers = headers
   this.body = body
-  this.stringify = () => {
+  this.write = body => {
+    this.body = Buffer.concat([this.body, Buffer.from(body)])
+    this.headers['Content-Length'] = Buffer.byteLength(this.body)
     let res = this.statusLine + '\r\n'
     for (let [k, v] of Object.entries(this.headers)) {
       res += `${k}:${v}\r\n`
     }
-
-    return Buffer.concat([Buffer.from(res + '\r\n'), this.body])
+    this.conn.write(Buffer.concat([Buffer.from(res + '\r\n'), this.body]))
   }
 }
 
-function getUnderDevelopmentResponse () {
+function getUnderDevelopmentResponse (request, conn) {
   const statusLine = 'HTTP/1.1 501 Not Implemented'
   const body = fs.readFileSync(`${PUBLIC_DIR}/under-dev.html`)
   const headers = {
@@ -26,10 +29,10 @@ function getUnderDevelopmentResponse () {
     'Content-Length': Buffer.byteLength(body)
   }
 
-  return new Response(statusLine, headers, body)
+  return new Response(request, conn, statusLine, headers, body)
 }
 
-function getNotFoundResponse () {
+function getNotFoundResponse (request, conn) {
   const statusLine = 'HTTP/1.1 404 Not Found'
   const body = fs.readFileSync(`${PUBLIC_DIR}/not-found.html`)
   const headers = {
@@ -37,10 +40,10 @@ function getNotFoundResponse () {
     'Content-Length': Buffer.byteLength(body)
   }
 
-  return new Response(statusLine, headers, body)
+  return new Response(request, conn, statusLine, headers, body)
 }
 
-function getForbiddenResponse () {
+function getForbiddenResponse (request, conn) {
   const statusLine = 'HTTP/1.1 403 Forbidden'
   const body = fs.readFileSync(`${PUBLIC_DIR}/forbidden.html`)
   const headers = {
@@ -48,31 +51,53 @@ function getForbiddenResponse () {
     'Content-Length': Buffer.byteLength(body)
   }
 
-  return new Response(statusLine, headers, body)
+  return new Response(request, conn, statusLine, headers, body)
 }
 
-function getResponse (request) {
-  if (request.requestLine.method !== 'GET') {
-    return getUnderDevelopmentResponse()
-  }
-
-  if (!url.pathToFileURL(`${PUBLIC_DIR}${request.requestLine.target}`)
-    .pathname.startsWith(PUBLIC_DIR)) {
-    return getForbiddenResponse()
-  }
-
-  try {
-    const statusLine = 'HTTP/1.1 200 OK'
-    const body = fs.readFileSync(`${PUBLIC_DIR}${request.requestLine.target}`)
-    const headers = {
-      'Content-Type': getContentType(request.requestLine.target) || 'application/octet-stream',
-      'Content-Length': Buffer.byteLength(body)
+function getResponse (conn, request, routes) {
+  if (request.requestLine.target.startsWith(routes.STATIC)) {
+    // static handler
+    if (request.requestLine.method !== 'GET') {
+      getUnderDevelopmentResponse(request, conn).write('')
+      return
     }
 
-    return new Response(statusLine, headers, body)
-  } catch (err) {
-    return getNotFoundResponse()
+    const STATIC_DIR = url.pathToFileURL(`${__dirname}/..${routes.STATIC}`).pathname
+    if (!url.pathToFileURL(`${__dirname}/..${request.requestLine.target}`)
+      .pathname.startsWith(STATIC_DIR)) {
+      getForbiddenResponse(request, conn).write('')
+      return
+    }
+
+    try {
+      const statusLine = 'HTTP/1.1 200 OK'
+      const body = fs.readFileSync(`${__dirname}/..${request.requestLine.target}`)
+      const headers = {
+        'Content-Type': getContentType(request.requestLine.target) || 'application/octet-stream',
+        'Content-Length': Buffer.byteLength(body)
+      }
+
+      new Response(request, conn, statusLine, headers, body).write('')
+      return
+    } catch (err) {
+      getNotFoundResponse(request, conn).write('')
+    }
   }
+
+  // route handler
+  const handler = routes[request.requestLine.method].find(([uri]) => uri === request.requestLine.target)
+  if (handler === undefined) {
+    getNotFoundResponse(request, conn).write('')
+    return
+  }
+
+  const statusLine = 'HTTP/1.1 200 OK'
+  const body = Buffer.from('')
+  const headers = {
+    'Content-Type': getContentType(request.requestLine.target) || 'application/octet-stream',
+    'Content-Length': Buffer.byteLength(body)
+  }
+  handler[1](request, new Response(request, conn, statusLine, headers, body))
 }
 
 module.exports = getResponse

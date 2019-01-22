@@ -3,41 +3,41 @@ const parseRequest = require('./request/request-parser')
 const getResponse = require('./response/get-response')
 
 function ResponseJs () {
-  this.STATIC = '/public' // static file serving directory
-  this.static = dir => (this.STATIC = dir)
-
   // array of request handlers for each method
-  this.GET = []
-  this.POST = []
-  this.PUT = []
-  this.DELETE = []
-  // this.head
-  // this.options
+  this.routes = {
+    STATIC: '/static',
+    GET: [],
+    POST: [],
+    PUT: [],
+    DELETE: []
+    // head
+    // options
+  }
 
+  this.static = dir => (this.routes.STATIC = dir)
   // register handlers for each routes
-  this.get = (...rc) => this.GET.push(rc)
-  this.post = (...rc) => this.POST.push(rc)
-  this.put = (...rc) => this.PUT.push(rc)
-  this.delete = (...rc) => this.DELETE.push(rc)
+  this.get = (...rc) => this.routes.GET.push(rc)
+  this.post = (...rc) => this.routes.POST.push(rc)
+  this.put = (...rc) => this.routes.PUT.push(rc)
+  this.delete = (...rc) => this.routes.DELETE.push(rc)
 
   this.listen = port => {
     const server = net.createServer()
 
-    server.on('connection', c => {
-      console.log(`${c.remoteAddress} connected`)
+    server.on('connection', conn => {
+      console.log(`${conn.remoteAddress} connected`)
 
       let data = ''
-      c.on('data', b => {
+      conn.on('data', b => {
         data += b.toString('utf8')
 
         const rl = parseRequest(data)
         if (rl !== null) {
           data = rl[1]
-          const res = getResponse(rl[0])
-          c.write(res.stringify())
+          getResponse(conn, rl[0], this.routes)
         }
       })
-      c.on('close', () => {
+      conn.on('close', () => {
         console.log(`client disconnected`)
       })
     })
