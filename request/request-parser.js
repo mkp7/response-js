@@ -1,6 +1,6 @@
 const parseReqLine = require('./request-line-parser')
 const parseHeader = require('./header-parser')
-// const parseBody = require('./body-parser')
+const parseBody = require('./body-parser')
 
 function Request (requestLine, headers, body) {
   this.requestLine = requestLine
@@ -24,15 +24,15 @@ function parseRequest (str) {
   let headers
   [headers, rstr] = parse
 
-  //   // try to parse body
-  //   parse = parseBody(rstr)
-  //   if (parse === null) {
-  //     return null
-  //   }
-  //   let body
-  //   [body, rstr] = parse
+  // try to parse body
+  parse = parseBody(rstr, headers)
+  if (parse === null) {
+    return null
+  }
+  let body
+  [body, rstr] = parse
 
-  const request = new Request(requestLine, headers, '')
+  const request = new Request(requestLine, headers, body)
 
   return [request, rstr]
 }

@@ -23,7 +23,7 @@ function parseHeader (str) {
     return null
   }
 
-  data[0][match[1]] = match[2]
+  data[0][match[1].toLowerCase()] = match[2]
 
   return data
 }
