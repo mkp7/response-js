@@ -8,33 +8,34 @@ function Request (requestLine, headers, body) {
   this.body = body
 }
 
-function parseRequest (str) {
+function parseRequest (buf) {
   // try to parse request-line
-  let parse = parseReqLine(str)
+  let parse = parseReqLine(buf)
   if (parse === null) {
     return null
   }
-  let [requestLine, rstr] = parse
+  let requestLine
+  [requestLine, buf] = parse
 
   // try to parse headers
-  parse = parseHeader(rstr)
+  parse = parseHeader(buf)
   if (parse === null) {
     return null
   }
   let headers
-  [headers, rstr] = parse
+  [headers, buf] = parse
 
   // try to parse body
-  parse = parseBody(rstr, headers)
+  parse = parseBody(buf, headers)
   if (parse === null) {
     return null
   }
   let body
-  [body, rstr] = parse
+  [body, buf] = parse
 
   const request = new Request(requestLine, headers, body)
 
-  return [request, rstr]
+  return [request, buf]
 }
 
 module.exports = parseRequest

@@ -27,9 +27,9 @@ function ResponseJs () {
     server.on('connection', conn => {
       console.log(`${conn.remoteAddress} connected`)
 
-      let data = ''
+      let data = Buffer.from('')
       conn.on('data', b => {
-        data += b.toString('utf8')
+        data = Buffer.concat([data, b])
 
         const rl = parseRequest(data)
         if (rl !== null) {

@@ -1,8 +1,13 @@
+const formDataParser = require('./form-data-parser')
+
 const bodyParsers = {
-  'application/json': JSON.parse
+  'application/json': JSON.parse,
+  'multipart/form-data': formDataParser
 }
 
-function parseBody (str, headers) {
+function parseBody (buf, headers) {
+  const str = buf.toString('utf8')
+
   if (headers['content-length'] === undefined) {
     return [null, str]
   }
@@ -14,10 +19,14 @@ function parseBody (str, headers) {
 
   const parser = bodyParsers[headers['content-type']]
   if (parser !== undefined) {
-    return [parser(str.slice(0, sz)), str.slice(sz)]
+    return [parser(str.slice(0, sz)), Buffer.from(str.slice(sz))]
   }
 
-  return [str.slice(0, sz), str.slice(sz)]
+  if (headers['content-type'].startsWith('multipart/form-data')) {
+    return [bodyParsers['multipart/form-data'](str.slice(0, sz)), Buffer.from(str.slice(sz))]
+  }
+
+  return [str.slice(0, sz), Buffer.from(str.slice(sz))]
 }
 
 module.exports = parseBody
