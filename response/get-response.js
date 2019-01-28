@@ -54,41 +54,39 @@ function getForbiddenResponse (request, conn) {
   return new Response(request, conn, statusLine, headers, body)
 }
 
-function getResponse (conn, request, routes) {
-  if (request.requestLine.target.startsWith(routes.STATIC)) {
-    // static handler
-    if (request.requestLine.method !== 'GET') {
-      getUnderDevelopmentResponse(request, conn).write('')
-      return
-    }
-
-    const STATIC_DIR = url.pathToFileURL(`${__dirname}/..${routes.STATIC}`).pathname
-    if (!url.pathToFileURL(`${__dirname}/..${request.requestLine.target}`)
-      .pathname.startsWith(STATIC_DIR)) {
-      getForbiddenResponse(request, conn).write('')
-      return
-    }
-
-    try {
-      const statusLine = 'HTTP/1.1 200 OK'
-      const body = fs.readFileSync(`${__dirname}/..${request.requestLine.target}`)
-      const headers = {
-        'Content-Type': getContentType(request.requestLine.target) || 'application/octet-stream',
-        'Content-Length': Buffer.byteLength(body)
-      }
-
-      new Response(request, conn, statusLine, headers, body).write('')
-      return
-    } catch (err) {
-      getNotFoundResponse(request, conn).write('')
-    }
+function staticHandler (conn, request, routes) {
+  // static handler
+  if (request.requestLine.method !== 'GET') {
+    getUnderDevelopmentResponse(request, conn).write('')
+    return
   }
 
-  // route handler
+  const STATIC_DIR = url.pathToFileURL(`${__dirname}/..${routes.STATIC}`).pathname
+  if (!url.pathToFileURL(`${__dirname}/..${request.requestLine.target}`)
+    .pathname.startsWith(STATIC_DIR)) {
+    getForbiddenResponse(request, conn).write('')
+    return
+  }
+
+  try {
+    const statusLine = 'HTTP/1.1 200 OK'
+    const body = fs.readFileSync(`${__dirname}/..${request.requestLine.target}`)
+    const headers = {
+      'Content-Type': getContentType(request.requestLine.target) || 'application/octet-stream',
+      'Content-Length': Buffer.byteLength(body)
+    }
+
+    new Response(request, conn, statusLine, headers, body).write('')
+    return
+  } catch (err) {
+    getNotFoundResponse(request, conn).write('')
+  }
+}
+
+function callbackHandler (conn, request, routes) {
   const handler = routes[request.requestLine.method].find(([uri]) => uri === request.requestLine.target)
   if (handler === undefined) {
-    getNotFoundResponse(request, conn).write('')
-    return
+    return getNotFoundResponse(request, conn).write('')
   }
 
   const statusLine = 'HTTP/1.1 200 OK'
@@ -97,7 +95,16 @@ function getResponse (conn, request, routes) {
     'Content-Type': getContentType(request.requestLine.target) || 'application/octet-stream',
     'Content-Length': Buffer.byteLength(body)
   }
-  handler[1](request, new Response(request, conn, statusLine, headers, body))
+  return handler[1](request, new Response(request, conn, statusLine, headers, body))
+}
+
+function getResponse (conn, request, routes) {
+  if (request.requestLine.target.startsWith(routes.STATIC)) {
+    return staticHandler(conn, request, routes)
+  }
+
+  // callback handler
+  return callbackHandler(conn, request, routes)
 }
 
 module.exports = getResponse

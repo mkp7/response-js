@@ -28,8 +28,8 @@ function ResponseJs () {
       console.log(`${conn.remoteAddress} connected`)
 
       let data = Buffer.from('')
-      conn.on('data', b => {
-        data = Buffer.concat([data, b])
+      conn.on('data', buf => {
+        data = Buffer.concat([data, buf])
 
         const rl = parseRequest(data)
         if (rl !== null) {
